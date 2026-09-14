@@ -2,7 +2,7 @@
 """
 Created on Mon Jun 29 12:15:23 2026
 
-@author: shade
+@author: ελενη <3
 """
 #%% PACKAGES
 
@@ -124,7 +124,7 @@ DSGEN = xarray.Dataset(
         "lat": (["rlat", "rlon"], cloud.lat.data),
         "lon": (["rlat", "rlon"], cloud.lon.data),
     },
-    attrs={"description": "Data for rcp 2.6"} #αλλαγή για 2.6 ή 8.5
+    attrs={"description": "Data for rcp 8.5"} #αλλαγή για 2.6 ή 8.5
 )
 
     
@@ -132,7 +132,7 @@ DSGEN = xarray.Dataset(
 
 #%% ΓΕΜΙΖΟΥΜΕ ΤΟ DSGEN
 
-rcp="rcp26" #αλλαγή για 2.6 ή 8.5
+rcp="rcp85" #αλλαγή για 2.6 ή 8.5
 quantities = ["clt", "tasmax", "pr", "sfcWind", "hurs"]
 for qu in quantities:
     for yr in range(start_year, end_year+1, 5):
@@ -144,8 +144,7 @@ for qu in quantities:
             
         if "height" in ds[qu].coords: 
             DSGEN[qu].attrs["height"] = ds[qu].height.values
-            
-            
+
 
 #%% CIT
 
@@ -386,23 +385,27 @@ dst = {26: DS26,
        85: DS85}
 
 
-var1 = "HCI"
+var1 = "hurs"
 label1 = "2026-2050"
 dst1 = dst[85]
 
-var2 = "HCI"
+var2 = "hurs"
 label2 = "2051-2075"
 dst2 = dst[85]
 
 #χάρτης
 var3 = "HCI" 
-label3 = "HCI"
-dst3 = dst[85]
+label3 = "Διαφορά HCI"
+dst3 = dst[26]
 
-gb = "time.year" # ή time.month
-title = "Μέσο HCI 2051-2075 (RCP 8.5)"
-labelx = "Rotated Longtitude"
-labely = "Rotated Latitude"
+var4 = "HCI" 
+label4 = "Διαφορά HCI"
+dst4 = dst[26]
+
+gb = "time.month" # ή time.month
+title = "Μηνιαία Σχετική Υγρασία (RCP 8.5)"
+labelx = ""
+labely = "Σχετική Υγρασία (%)"
 
 
 
@@ -412,7 +415,7 @@ PlotTime1 = (dst1[var1].#sel(time=DSGEN.time.dt.month.isin([5,6,7,8,9])). #1-12
 matplotlib.pyplot.plot(
     numpy.arange(len(PlotTime1)),
     PlotTime1,
-    color="red", 
+    color="blue", 
     linewidth=1, 
     #marker= "o", 
     #markersize=0.5, 
@@ -423,9 +426,9 @@ PlotTime2 = (dst2[var2].#sel(time=DSGEN.time.dt.month.isin([5,6,7,8,9])). #1-12
              sel(time=slice("2051","2075")).
              groupby(gb).mean(dim=["time", "rlat", "rlon"]))#.plot(
 matplotlib.pyplot.plot(
-    numpy.arange(len(PlotTime2)),
+    numpy.arange(len(PlotTime2)),    
     PlotTime2,
-    color="blue", 
+    color="red", 
     linewidth=1, 
     #marker= "o", 
     #markersize=0.5, 
@@ -441,16 +444,31 @@ matplotlib.pyplot.xlim(left=0, right=11) # (left=0, right=25) ή (left=2026, rig
 #matplotlib.pyplot.ylim()
 
 #χάρτης
-PlotTime3 = (dst3[var3].#sel(time=DSGEN.time.dt.month.isin([5,6,7,8,9])). #1-12
-             sel(time=slice("2051","2075")).mean(dim="time").
-             plot(
-                     cmap="viridis",
-                     vmin=60, #95-70 σεζον, 85-60 ετησιο HCI
-                     vmax=95,
+PlotTime3 = (dst3[var3].sel(time=DSGEN.time.dt.month.isin([5,6,7,8,9])). #1-12
+             sel(time=slice("2026","2026")).mean(dim="time"))#.
+#             plot(
+#                     cmap="viridis",
+#                     vmin=60, #95-70 σεζον, 85-60 ετησιο HCI #1-5 cit yearly
+ #                    vmax=95,
                      #x="lon",
                      #y="lat",
-                     cbar_kwargs={"label":label3}))
+ #                    cbar_kwargs={"label":label3}))
 
+PlotTime4 = (dst4[var4].sel(time=DSGEN.time.dt.month.isin([5,6,7,8,9])). #1-12
+             sel(time=slice("2075","2075")).mean(dim="time"))#.
+#             plot(
+#                     cmap="viridis",
+#                     #vmin=60, #95-70 σεζον, 85-60 ετησιο HCI
+#                     #vmax=95,
+                     #x="lon",
+                     #y="lat",
+#                    cbar_kwargs={"label":label3}))
+
+MegaPlot = PlotTime4-PlotTime3
+MegaPlot.plot(cmap="RdBu", cbar_kwargs={"label":label3},
+              #vmin=-1.2, vmax=1.2
+              )
+             
 
 matplotlib.pyplot.title(title,
                         fontsize=18,
@@ -464,10 +482,13 @@ matplotlib.pyplot.show()
 
 
 
+
+
+
 #%% ΣΤΑΤΙΣΤΙΚΟΙ ΕΛΕΓΧΟΙ
 
 check = (dst2[var2].
-             #sel(time=DSGEN.time.dt.month.isin([6,7,8])). #1-12
+             #sel(time=DSGEN.time.dt.month.isin([5,6,7,8,9])). #1-12
              #sel(time=slice("2026","2050")).
              groupby(gb).mean(dim=["time", "rlat", "rlon"]))
 
@@ -488,7 +509,7 @@ else:
 #Q-Q plot
 scipy.stats.probplot((check).values,
              dist="norm", plot=matplotlib.pyplot)
-matplotlib.pyplot.title("Q-Q plot RCP 2.6",
+matplotlib.pyplot.title("Q-Q plot RCP 8.5",
                         fontsize=18,
                         fontweight= "bold")
 matplotlib.pyplot.grid()
@@ -501,49 +522,36 @@ def fit_regression(y, x):
     if numpy.count_nonzero(~numpy.isnan(y))>2:
          model = statsmodels.api.OLS(endog=y[(~numpy.isnan(y))], exog= statsmodels.api.add_constant(x[(~numpy.isnan(y))]))
          results = model.fit()
-         return results.pvalues[1], results.params[1]*10  # *365.25 per decade if check dims is time, without if check.dims is year
+         return results.pvalues[1], results.params[1]*10, results.bse[1]*10, results.params[0]  # *365.25 per decade if check dims is time, without if check.dims is year
     else:
-         return numpy.nan, numpy.nan
-
-
-# Calculate the anomalies
-climatology = (dst2[var2].
-             #sel(time=DSGEN.time.dt.month.isin([6,7,8])). #1-12
-             #sel(time=slice("2026","2050")).
-             groupby(gb).mean(dim=["time", "rlat", "rlon"]))
-anomalies = (dst2[var2].
-             #sel(time=DSGEN.time.dt.month.isin([6,7,8])). #1-12
-             #sel(time=slice("2026","2050")).
-             groupby(gb)) - climatology      #without the mean
+         return numpy.nan, numpy.nan, numpy.nan, numpy.nan
 
 
 #x = (DSGEN.time - DSGEN.time.isel(time=0))/numpy.timedelta64(1, "D") #if check.dims is time
 x = check.year - check.year[0] #if check.dims is year
-pvalueOLS, slopeOLS = xarray.apply_ufunc(
+pvalueOLS, slopeOLS, steOLS, itcpOLS = xarray.apply_ufunc(
         fit_regression,
-        #anomalies, x,  #anomalies 
-        check, x,      #raw data
+        check, x,
         input_core_dims=[['year'], ['year']],  # time/year change depending on check.dims
-        output_core_dims=[[], []],
+        output_core_dims=[[], [], [], []],
         vectorize=True, 
         dask='parallelized',  
-        output_dtypes=[float, float],
+        output_dtypes=[float, float, float, float],
     )
 slopeOLS = slopeOLS.assign_attrs(units="per decade")
 
 
-print (f"OLS P-value is {pvalueOLS.item():.6f}")
+print (f"OLS P-value is {pvalueOLS.item():.3f}")
 print (f"OLS Slope is {slopeOLS.item():.6f}")
+print (f"OLS Standard Error is {steOLS.item():.6f}")
+print (f"OLS Intercept is {itcpOLS.item():.6f}")
 
-intercept1 = check.mean() - slopeOLS / 10  * x.mean()
-OLSline1= intercept1 + slopeOLS/10 * x
-OLSline1.plot(color = "darkred", label = "RCP 8.5 OLS slope")
 
-intercept2 = check.mean() - slopeOLS / 10  * x.mean()
-OLSline2= intercept2 + slopeOLS/10 * x
-OLSline2.plot(color = "darkblue", label = "RCP 2.6 OLS slope")
+OLSline1= itcpOLS + slopeOLS * x/10
+OLSline1.plot(color = "darkblue",  linestyle="--", label = "RCP 2.6 OLS slope")
 
-del x
+OLSline2= itcpOLS + slopeOLS * x/10
+OLSline2.plot(color = "darkred",  linestyle="--", label = "RCP 8.5 OLS slope")
 
 
 #Mann-Kendall regression and Sen's slope
@@ -551,26 +559,26 @@ del x
 def mk_regression(y):
     if numpy.count_nonzero(~numpy.isnan(y))>2:
         result = mk.original_test(y[~numpy.isnan(y)])
-        return result.p, result.slope*10 # per decade
+        return result.p, result.slope*10, result.intercept # per decade
     else:
          return numpy.nan, numpy.nan
 
 
-pvalueMK, slopeMK = xarray.apply_ufunc(
+pvalueMK, slopeMK, itcpMK = xarray.apply_ufunc(
             mk_regression,
             check,
             input_core_dims=[['year']],  # iterate over lat/lon
-            output_core_dims=[[], []],
+            output_core_dims=[[], [], []],
             vectorize=True,  
             dask='parallelized',  
-            output_dtypes=[float, float],
+            output_dtypes=[float, float, float],
             )
 slopeMK = slopeMK.assign_attrs(units="per decade")
 
 
-print (f"MK P-value is {pvalueMK.item():.6f}")
-print (f"MK Slope is {slopeMK.item():.6f}")
-
+print (f"MK P-value is {pvalueMK.item():.3f}")
+print (f"Sen Slope is {slopeMK.item():.6f}")
+print (f"MK intercept is {itcpMK.item():.6f}")
 
 
 #%% πρόχειρο           
